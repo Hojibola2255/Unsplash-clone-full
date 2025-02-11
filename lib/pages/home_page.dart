@@ -1,5 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ngdemo16/blocs/collection/collection_bloc.dart';
+import 'package:ngdemo16/blocs/home/home_bloc.dart';
+import 'package:ngdemo16/blocs/home/home_event.dart';
+import 'package:ngdemo16/blocs/home/home_state.dart';
+import 'package:ngdemo16/blocs/search/search_bloc.dart';
 import 'package:ngdemo16/pages/create_page.dart';
 import 'package:ngdemo16/pages/profile_page.dart';
 import 'package:ngdemo16/pages/search_page.dart';
@@ -16,13 +22,16 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  PageController? _pageController;
+  PageController pageController = PageController();
+  late HomeBloc homeBloc;
+
+
   int _currentTap = 0;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    homeBloc = context.read<HomeBloc>();
   }
 
   @override
@@ -53,19 +62,29 @@ class _HomePageState extends State<HomePage> {
             )
           ],
         )
-            : null, // ProfilePage uchun AppBar ko'rsatilmaydi
-        body: PageView(
-          controller: _pageController,
-          children: [
-            CollectionPage(),
-            SearchPage(),
-            CreatePage(),
-            ProfilePage(),
-          ],
-          onPageChanged: (int index) {
-            setState(() {
-              _currentTap = index;
-            });
+            : null, // ProfilePageda AppBarni ko'rsatmaydi
+        body: BlocBuilder<HomeBloc, HomeState>(
+          builder: (context, state){
+            return PageView(
+              controller: pageController,
+              children: [
+
+                BlocProvider(
+                  create: (context)=> CollectionBloc(),
+                  child: CollectionPage(),
+                ),
+                BlocProvider(
+                  create: (context)=> SearchBloc(),
+                  child: SearchPage(),
+                ),
+
+                CreatePage(),
+                ProfilePage(),
+              ],
+              onPageChanged: (int index) {
+                homeBloc.add(PageViewEvent(currentIndex: index));
+              },
+            );
           },
         ),
         bottomNavigationBar: CupertinoTabBar(
@@ -81,7 +100,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.add_box, size: 32),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded, size: 32),
+              icon: Icon(Icons.person, size: 32),
             ),
           ],
           currentIndex: _currentTap,
@@ -90,12 +109,11 @@ class _HomePageState extends State<HomePage> {
             setState(() {
               _currentTap = index;
             });
-            _pageController!.animateToPage(index,
-                duration: Duration(milliseconds: 200), curve: Curves.easeIn);
+            pageController!.animateToPage(index,
+                duration: Duration(milliseconds: 200), curve: Curves.bounceIn);
           },
         ),
       );
     }
-
   }
 

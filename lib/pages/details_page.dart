@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:ngdemo16/model/photo_model.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DetailsPage extends StatefulWidget {
   final Photo? photo;
@@ -19,16 +21,19 @@ class _DetailsPageState extends State<DetailsPage> {
           InteractiveViewer(
             panEnabled: true,
             minScale: 1.0,
-            maxScale: 4.0,
-            child: Center(
-              child: SizedBox(
-                width: double.infinity,
-                child: Image.network(
-                  widget.photo!.urls.full,
-                  fit: BoxFit.cover,
-                  height: 550,
+            maxScale: 5.0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                 Container(
+                   height: 550,
+                  width: double.infinity,
+                  child: Image.network(
+                    widget.photo!.urls.full,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           Positioned(
@@ -56,8 +61,63 @@ class _DetailsPageState extends State<DetailsPage> {
               ),
             ),
           ),
+
+          Positioned(
+            right: 16,
+            bottom: 150,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.favorite, color: Colors.white, size: 25,),
+                    onPressed: () {},
+                  ),
+                ),
+
+                SizedBox(height: 16),
+
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.add, color: Colors.white, size: 25,),
+                    onPressed: () {},
+                  ),
+                ),
+
+                SizedBox(height: 16),
+
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.download, color: Colors.white, size: 25,),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         ],
       ),
     );
   }
+
 }

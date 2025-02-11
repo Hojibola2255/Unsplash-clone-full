@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ngdemo16/blocs/collection/collection_bloc.dart';
+import 'package:ngdemo16/blocs/collection/collection_event.dart';
+import 'package:ngdemo16/blocs/collection/collection_state.dart';
 import 'package:ngdemo16/pages/photos_page.dart';
 
 import '../model/collection_model.dart';
@@ -15,72 +19,61 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
-  bool isLoading = false;
-  List<Collection> items = [];
-  int currentPage = 1;
-  ScrollController  scrollcontroller = ScrollController();
+  late CollectionBloc collectionBloc;
 
-  _callPhotosPage(Collection collection) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (BuildContext context) {
-      return PhotosPage(
-        collection: collection,
-      );
-    }));
-  }
+  int currentPage = 1;
+  bool isLoading = false;
+  ScrollController scrollcontroller = ScrollController();
+
 
   @override
   void initState() {
     super.initState();
+    collectionBloc = BlocProvider.of<CollectionBloc>(context);
+    collectionBloc.add(CollectionPhotoEvent());
 
-    scrollcontroller.addListener((){
-      if(scrollcontroller.position.maxScrollExtent <= scrollcontroller.offset){
-        currentPage++;
-        LogService.i(currentPage.toString());
-        _apiCollectionList();
-      }
-    });
 
-    _apiCollectionList();
-  }
-
-  _apiCollectionList() async {
-    setState(() {
-      isLoading = true;
-    });
-    var response = await Network.GET(Network.API_COLLECTIONS, Network.paramsCollections(currentPage));
-    var result = Network.parseCollections(response!);
-    LogService.i(response!);
-
-    setState(() {
-      items = result;
-      isLoading = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            ListView.builder(
-              itemCount: items.length,
+      backgroundColor: Colors.black,
+      body: BlocBuilder<CollectionBloc, CollectionState>(
+          buildWhen: (previous, current) {
+            return current is CollectionSuccesState;
+          },
+          builder: (context, state) {
+            if (state is CollectionSuccesState) {
+              ListView.builder(
+                controller: ScrollController(),
+                itemCount: collectionBloc.items.length,
+                itemBuilder: (context, index) {
+                  return itemOfCollection(collectionBloc.items[index], index, collectionBloc);
+                },
+              );
+            }
+            if (state is CollectionFeilureState) {
+              return Center(
+                child: Text(state.errorMessage),
+              );
+            }
+            return ListView.builder(
+              controller: ScrollController(),
+              itemCount: collectionBloc.items.length,
               itemBuilder: (context, index) {
-                return itemOfCollection(items[index]);
+                return itemOfCollection(collectionBloc.items[index], index, collectionBloc);
               },
-            ),
-
-            isLoading ? Center(child: CircularProgressIndicator(),) : SizedBox.shrink(),
-          ],
-        )
+            );
+          }
+      ),
     );
   }
 
-  Widget itemOfCollection(Collection collection) {
+  Widget itemOfCollection(Collection collection, int index, CollectionBloc collectionBloc) {
     return GestureDetector(
       onTap: () {
-        _callPhotosPage(collection);
+        collectionBloc.callPhotosPage(context, collection);
       },
       child: Container(
         width: double.infinity,
@@ -123,4 +116,5 @@ class _CollectionPageState extends State<CollectionPage> {
       ),
     );
   }
+
 }

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:ngdemo16/blocs/photos/photos_bloc.dart';
+import 'package:ngdemo16/blocs/photos/photos_event.dart';
+import 'package:ngdemo16/blocs/photos/photos_state.dart';
 
 
 import '../model/collection_model.dart';
@@ -18,8 +22,8 @@ class PhotosPage extends StatefulWidget {
 }
 
 class _PhotosPageState extends State<PhotosPage> {
-  bool isLoading = false;
-  List<Photo> items = [];
+  late PhotoBloc photoBloc;
+
   ScrollController scrollController = ScrollController();
   var currentPage = 1;
 
@@ -38,31 +42,17 @@ class _PhotosPageState extends State<PhotosPage> {
   void initState() {
     super.initState();
 
+    photoBloc = BlocProvider.of<PhotoBloc>(context);
+    photoBloc.add(PhotosPhotoEvent(widget.collection));
+
     scrollController.addListener((){
       if(scrollController.position.maxScrollExtent <= scrollController.offset){
         currentPage++;
         LogService.i(currentPage.toString());
-        _apiCollectionPhotos();
+
       }
     });
 
-    _apiCollectionPhotos();
-  }
-
-  _apiCollectionPhotos() async {
-    setState(() {
-      isLoading = true;
-    });
-    var response = await Network.GET(
-        Network.API_COLLECTIONS_PHOTOS.replaceFirst(":id", widget.collection!.id),
-        Network.paramsCollectionsPhotos(currentPage));
-    LogService.i(response!);
-    var result = Network.parseCollectionsPhotos(response);
-
-    setState(() {
-      items.addAll(result); // Append new data to the list
-      isLoading = false;
-    });
   }
 
 
@@ -87,27 +77,46 @@ class _PhotosPageState extends State<PhotosPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          MasonryGridView.builder(
-            controller: scrollController,
-            gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2),
-            itemCount: items.length,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
-            itemBuilder: (context, index) {
-              return _itemOfPhoto(items[index], index);
-            },
-          ),
 
-          isLoading ? Center(child: CircularProgressIndicator(),) : SizedBox.shrink(),
-        ],
+      body: BlocBuilder<PhotoBloc, PhotosState>(
+          builder: (context, state){
+            if (state is PhotosSuccesState) {
+              ListView.builder(
+                controller: ScrollController(),
+                itemCount: photoBloc.items.length,
+                itemBuilder: (context, index) {
+                  return _itemOfPhoto(context, photoBloc.items[index], index);
+                },
+              );
+            }
+            if (state is PhotosErrorState) {
+              return Center(
+                child: Text("state.errorMessage"),
+              );
+            }
+            return Stack(
+              children: [
+                MasonryGridView.builder(
+                  controller: scrollController,
+                  gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2),
+                  itemCount: photoBloc.items.length,
+                  mainAxisSpacing: 2,
+                  crossAxisSpacing: 2,
+                  itemBuilder: (context, index) {
+                    return _itemOfPhoto(context, photoBloc.items[index], index);
+                  },
+                ),
+
+                photoBloc.isLoading ? Center(child: CircularProgressIndicator(),) : SizedBox.shrink(),
+              ],
+            );
+          }
       ),
     );
   }
 
-  Widget _itemOfPhoto(Photo photo, int index) {
+  Widget _itemOfPhoto(BuildContext context, Photo photo,  int index ) {
     return GestureDetector(
       onTap: () {
         _callDetailsPage(photo);
@@ -122,3 +131,22 @@ class _PhotosPageState extends State<PhotosPage> {
     );
   }
 }
+
+
+/*Stack(
+              children: [
+                MasonryGridView.builder(
+                  controller: scrollController,
+                  gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2),
+                  itemCount: photoBloc.items.length,
+                  mainAxisSpacing: 2,
+                  crossAxisSpacing: 2,
+                  itemBuilder: (context, index) {
+                    return _itemOfPhoto(context, photoBloc.items[index], index);
+                  },
+                ),
+
+                photoBloc.isLoading ? Center(child: CircularProgressIndicator(),) : SizedBox.shrink(),
+              ],
+            );*/
